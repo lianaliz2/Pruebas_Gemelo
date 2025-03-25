@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" class="bim-ui-dark" id="project-page">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BIM App</title>
+
+        <link rel="stylesheet" href="assets/css/template.css">
+        <link rel="stylesheet" href="assets/css/style.css">
+    </head>
+    <body id="body-page">
+        <div id="project-content">
+            <div id="data">
+                <h2>Project name</h2>
+                <p>Project description</p>
+            </div>
+            <bim-tabs id="ribbon">
+                <bim-tab label="IFC Viewer" style="border-radius: 6px; margin-right: 6px;">
+                    <div style="display: flex;" id="tab-viewer">
+                    </div>
+                </bim-tab>
+                <bim-tab label="Asset Management">
+                    <div style="display: flex;">
+                        <bim-toolbar active>
+                            <bim-toolbar-section label="Element information">
+                                <bim-button vertical label="Find" icon="gravity-ui:magnifier"></bim-button>
+                                <bim-button vertical label="Photos" icon="material-symbols:image-outline-rounded"></bim-button>
+                                <bim-button vertical label="Documents" icon="carbon:document"></bim-button>
+                                <bim-button vertical label="Relations" icon="lucide:link"></bim-button>
+                                <bim-button vertical label="Log" icon="tabler:restore"></bim-button>
+                            </bim-toolbar-section>
+                            <bim-toolbar-section label="Annotation tools">
+                                <bim-button vertical label="Comment" icon="fluent:comment-note-24-regular"></bim-button>
+                            </bim-toolbar-section>
+                        </bim-toolbar>
+                    </div>
+                </bim-tab>
+                <bim-tab label="Communication">
+                    <div style="display: flex;">
+                        <bim-toolbar active>
+                            <bim-toolbar-section label="Messaging Platforms">
+                                <bim-button vertical label="Teams" icon="bx:bxl-microsoft-teams"></bim-button>
+                                <bim-button vertical label="Slack" icon="simple-icons:slack"></bim-button>
+                                <bim-button vertical label="Discord" icon="bi:discord"></bim-button>
+                            </bim-toolbar-section>
+                        </bim-toolbar>
+                    </div>
+                </bim-tab>
+            </bim-tabs>
+            <bim-panel-container id="panel"></bim-panel-container>
+            <div id="viewer"></div>
+        </div>
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>
