@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Map with Layer Adding</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+
+    <!-- Additional styles -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map-container {
+            width: 100%;
+            height: 80vh;
+        }
+
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #controls button {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Control panel to add layers -->
+    <div id="controls">
+        <button id="addMarkerBtn">Add Marker</button>
+        <button id="addPolygonBtn">Add Polygon</button>
+        <input type="file" id="geojsonFile" accept=".geojson" />
+    </div>
+
+    <!-- Map container -->
+    <div id="map-container"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map-container').setView([40.4168, -3.7038], 10);  // Coordinates of Madrid
+
+        // Add OpenStreetMap layer
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Variable to hold added layers
+        var addedLayers = [];
+
+        // Add a marker
+        document.getElementById('addMarkerBtn').addEventListener('click', function() {
+            var marker = L.marker(map.getCenter()).addTo(map)
+                .bindPopup("<b>Marker added at " + map.getCenter().lat.toFixed(4) + ", " + map.getCenter().lng.toFixed(4) + "</b>");
+            
+            addedLayers.push(marker);  // Add to layers array
+        });
+
+        // Add a polygon (fixed area for simplicity)
+        document.getElementById('addPolygonBtn').addEventListener('click', function() {
+            var polygon = L.polygon([
+                [40.417, -3.703],
+                [40.418, -3.701],
+                [40.416, -3.699]
+            ]).addTo(map)
+              .bindPopup("Polygon added");
+
+            addedLayers.push(polygon);  // Add to layers array
+        });
+
+        // Load a GeoJSON file and add it as a layer
+        document.getElementById('geojsonFile').addEventListener('change', function(event) {
+            var file = event.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var geojson = JSON.parse(e.target.result);
+                    var geojsonLayer = L.geoJSON(geojson).addTo(map);
+                    addedLayers.push(geojsonLayer);  // Add GeoJSON to layers array
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Optional: Add functionality to clear all added layers
+        function clearAllLayers() {
+            addedLayers.forEach(function(layer) {
+                map.removeLayer(layer);
+            });
+            addedLayers = [];  // Reset the layers array
+        }
+
+        // Add button to clear all layers
+        var clearButton = document.createElement("button");
+        clearButton.textContent = "Clear Layers";
+        clearButton.style.marginTop = "10px";
+        clearButton.addEventListener('click', clearAllLayers);
+        document.getElementById('controls').appendChild(clearButton);
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    
+    <script>
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+    
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems
+            },
+            draw: {
+                polygon: true,
+                polyline: true,
+                rectangle: true,
+                circle: true,
+                marker: true
+            }
+        });
+    
+        map.addControl(drawControl);
+    
+        map.on('draw:created', function(event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+        });
+    </script>
+    
+
+</body>
+</html>
