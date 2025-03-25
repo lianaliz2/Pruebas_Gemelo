@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PyDeck GeoJSON Integration</title>
+    <script src="https://cdn.jsdelivr.net/npm/@deck.gl/core@8.5.0/dist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@deck.gl/layers@8.5.0/dist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@deck.gl/react@8.5.0/dist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.6.1/dist/mapbox-gl.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.6.1/dist/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      #deck-container {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #deck-container canvas {
+        z-index: 1;
+        background: none;
+      }
+
+      #controls {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 5;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <input type="file" id="geojsonFile" accept=".geojson" />
+    </div>
+    <div id="deck-container"></div>
+
+    <script>
+      const container = document.getElementById("deck-container");
+
+      // Initial Map Setup
+      const jsonInput = {
+        initialViewState: {
+          latitude: 37.7749,
+          longitude: -122.4194,
+          pitch: 45,
+          zoom: 10,
+        },
+        layers: [],
+        mapProvider: "mapbox",
+        mapStyle:
+          "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+        views: [
+          {
+            "@@type": "MapView",
+            controller: true,
+          },
+        ],
+      };
+
+      // Create the initial deck instance
+      const deckInstance = new deck.DeckGL({
+        container: container,
+        initialViewState: jsonInput.initialViewState,
+        controller: true,
+        layers: [],
+        mapboxApiAccessToken: "YOUR_MAPBOX_ACCESS_TOKEN", // Replace with your Mapbox token
+        mapStyle: jsonInput.mapStyle,
+      });
+
+      // Function to load GeoJSON and add as a layer
+      function loadGeoJSONLayer(geojson) {
+        const geojsonLayer = new deck.GeoJsonLayer({
+          id: "geojson-layer",
+          data: geojson,
+          pickable: true,
+          filled: true,
+          stroked: true,
+          lineWidthMinPixels: 2,
+          getFillColor: [255, 0, 0, 180], // Red color
+          getLineColor: [0, 0, 0, 255], // Black line
+        });
+
+        deckInstance.setProps({
+          layers: [...deckInstance.props.layers, geojsonLayer], // Add the new GeoJSON layer
+        });
+      }
+
+      // Handle file input
+      document
+        .getElementById("geojsonFile")
+        .addEventListener("change", function (event) {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              const geojson = JSON.parse(e.target.result);
+              loadGeoJSONLayer(geojson); // Add the loaded GeoJSON to the deck
+            };
+            reader.readAsText(file);
+          }
+        });
+    </script>
+  </body>
+</html>

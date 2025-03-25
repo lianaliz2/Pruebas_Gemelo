@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoJSON and IFC Integration</title>
+
+    <!-- Deck.gl -->
+    <script src="https://cdn.jsdelivr.net/npm/@deck.gl/core@8.5.0/dist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@deck.gl/layers@8.5.0/dist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@deck.gl/react@8.5.0/dist.min.js"></script>
+
+    <!-- Mapbox -->
+    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.6.1/dist/mapbox-gl.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.6.1/dist/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
+    <!-- Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+
+    <!-- IFC.js -->
+    <script src="https://cdn.jsdelivr.net/npm/ifc.js@0.0.8/dist/ifc.min.js"></script>
+
+    <!-- Bootstrap and Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      #deck-container {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #deck-container canvas {
+        z-index: 1;
+        background: none;
+      }
+
+      #controls {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 5;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <input type="file" id="geojsonFile" accept=".geojson" />
+      <input type="file" id="ifcFile" accept=".ifc" />
+    </div>
+    <div id="deck-container"></div>
+
+    <script>
+      const container = document.getElementById("deck-container");
+
+      // Initial Map Setup
+      const jsonInput = {
+        initialViewState: {
+          latitude: 37.7749,
+          longitude: -122.4194,
+          pitch: 45,
+          zoom: 10,
+        },
+        layers: [],
+        mapProvider: "mapbox",
+        mapStyle:
+          "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+        views: [
+          {
+            "@@type": "MapView",
+            controller: true,
+          },
+        ],
+      };
+
+      // Create the initial deck instance
+      const deckInstance = new deck.DeckGL({
+        container: container,
+        initialViewState: jsonInput.initialViewState,
+        controller: true,
+        layers: [],
+        mapStyle: jsonInput.mapStyle,
+      });
+
+      // Function to load GeoJSON and add as a layer
+      function loadGeoJSONLayer(geojson) {
+        const geojsonLayer = new deck.GeoJsonLayer({
+          id: "geojson-layer",
+          data: geojson,
+          pickable: true,
+          filled: true,
+          stroked: true,
+          lineWidthMinPixels: 2,
+          getFillColor: [255, 0, 0, 180], 
+          getLineColor: [0, 0, 0, 255],
+        });
+
+        deckInstance.setProps({
+          layers: [...deckInstance.props.layers, geojsonLayer],
+        });
+      }
+
+      // Function to load IFC and add as 3D objects
+      let ifcViewer;
+
+      function loadIFC(file) {
+        ifcViewer = new IfcViewerAPI({
+          container: document.getElementById("deck-container"),
+        });
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const ifcData = e.target.result;
+          ifcViewer.loadIfc(ifcData).then(() => {
+            console.log("IFC model loaded successfully.");
+            animate();
+          }).catch((error) => {
+            console.error("Error loading IFC file:", error);
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      // Animation loop to render the scene
+      function animate() {
+        requestAnimationFrame(animate);
+        if (ifcViewer) ifcViewer.render();
+      }
+
+      // Handle file inputs
+      document.getElementById("geojsonFile").addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const geojson = JSON.parse(e.target.result);
+            loadGeoJSONLayer(geojson);
+          };
+          reader.readAsText(file);
+        }
+      });
+
+      document.getElementById("ifcFile").addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          loadIFC(file);
+        }
+      });
+    </script>
+  </body>
+</html>
