@@ -38,12 +38,52 @@
       }
 
       #controls {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        z-index: 5;
-        background-color: rgba(255, 255, 255, 0.8);
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.7);
         padding: 10px;
+        border-radius: 5px;
+      }
+
+      #controls button,
+      #controls input {
+        margin: 5px;
+      }
+
+      #legend {
+        position: fixed;
+        top: 90px;
+        right: 10px;
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-radius: 5px;
+        max-width: 250px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .color-box {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+      }
+
+      .color-input {
+        margin-left: 10px;
+        cursor: pointer;
+      }
+
+      .legend-header {
+        font-weight: bold;
+        margin-bottom: 5px;
       }
     </style>
   </head>
@@ -53,21 +93,26 @@
     </div>
     <div id="deck-container"></div>
 
+    <!-- Leyenda desplegable -->
+    <div id="legend">
+      <div class="legend-header"></div>
+    </div>
+
     <script>
       const container = document.getElementById("deck-container");
 
       // Initial Map Setup
       const jsonInput = {
         initialViewState: {
-          latitude: 37.7749,
-          longitude: -122.4194,
+          latitude: 40.4168,
+          longitude: -3.7038,
           pitch: 45,
-          zoom: 10,
+          zoom: 5,
         },
         layers: [],
         mapProvider: "mapbox",
         mapStyle:
-          "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+          "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
         views: [
           {
             "@@type": "MapView",
@@ -82,27 +127,69 @@
         initialViewState: jsonInput.initialViewState,
         controller: true,
         layers: [],
-        mapboxApiAccessToken: "YOUR_MAPBOX_ACCESS_TOKEN", // Replace with your Mapbox token
+        mapboxApiAccessToken: "YOUR_MAPBOX_ACCESS_TOKEN",
         mapStyle: jsonInput.mapStyle,
       });
 
+      let layerInfo = []; // Global variable to store layer information
+
       // Function to load GeoJSON and add as a layer
-      function loadGeoJSONLayer(geojson) {
+      function loadGeoJSONLayer(geojson, name) {
+        // Crear un identificador único para cada capa
+        const layerId = `geojson-layer-${name}`;
+
         const geojsonLayer = new deck.GeoJsonLayer({
-          id: "geojson-layer",
+          id: layerId,
           data: geojson,
           pickable: true,
           filled: true,
           stroked: true,
           lineWidthMinPixels: 2,
-          getFillColor: [255, 0, 0, 180], // Red color
-          getLineColor: [0, 0, 0, 255], // Black line
+          getFillColor: [255, 0, 0, 180],
+          getLineColor: [0, 0, 0, 255],
         });
 
+        // Crear el PathLayer si la capa contiene caminos o polígonos
+        if (geojson.features) {
+          geojson.features.forEach((feature) => {
+            if (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
+              const pathLayer = new deck.PathLayer({
+                id: `geojson-layer-${name}-polygons-stroke`,
+                data: feature.geometry.coordinates[0],
+                getPath: (d) => d,
+                getColor: [0, 0, 0, 255],
+                getWidth: 2,
+                widthMinPixels: 2,
+              });
+
+              // Agregar la capa PathLayer al conjunto de capas de DeckGL
+              deckInstance.setProps({
+                layers: [...deckInstance.props.layers, pathLayer],
+              });
+            }
+          });
+        }
+
+        // Eliminar la capa anterior si ya existe
         deckInstance.setProps({
-          layers: [...deckInstance.props.layers, geojsonLayer], // Add the new GeoJSON layer
+          layers: deckInstance.props.layers.filter((layer) => layer.id !== layerId),
         });
+
+        // Agregar la capa GeoJSON al conjunto de capas de DeckGL
+        deckInstance.setProps({
+          layers: [...deckInstance.props.layers, geojsonLayer],
+        });
+
+        // Agregar la capa a la variable global para la leyenda
+        layerInfo.push({
+          layer: geojsonLayer,
+          color: "#FF0000", // Color inicial
+          name: name,
+        });
+
+        updateLegend();
       }
+
 
       // Handle file input
       document
@@ -111,13 +198,100 @@
           const file = event.target.files[0];
           if (file) {
             const reader = new FileReader();
+            var name = file.name.substring(0, file.name.lastIndexOf('.'));
             reader.onload = function (e) {
               const geojson = JSON.parse(e.target.result);
-              loadGeoJSONLayer(geojson); // Add the loaded GeoJSON to the deck
+              loadGeoJSONLayer(geojson, name);
             };
             reader.readAsText(file);
           }
         });
+
+      // Function to update the legend with current layers
+      function updateLegend() {
+        var legendContainer = document.getElementById("legend");
+
+        // Show the legend only if there are layers
+        if (layerInfo.length > 0) {
+          legendContainer.style.display = "block";
+        } else {
+          legendContainer.style.display = "none";
+        }
+
+        legendContainer.innerHTML = "<div class='legend-header'>Legend</div>";
+
+        layerInfo.forEach(function (info, index) {
+          var legendItem = document.createElement("div");
+          legendItem.classList.add("legend-item");
+
+          // Create the color box
+          var colorBox = document.createElement("span");
+          colorBox.classList.add("color-box");
+          colorBox.style.backgroundColor = info.color;
+
+          // Create the editable name label
+          var nameLabel = document.createElement("span");
+          nameLabel.textContent = info.name;
+          nameLabel.contentEditable = true;
+          nameLabel.style.cursor = "pointer";
+          nameLabel.onblur = function () {
+            info.name = this.textContent;
+          };
+
+          // Create the color input
+          var colorInput = document.createElement("input");
+          colorInput.type = "color";
+          colorInput.value = info.color;
+          colorInput.classList.add("color-input");
+          colorInput.oninput = function () {
+            var newColor = this.value;
+            info.color = newColor;
+            colorBox.style.backgroundColor = newColor;
+
+            // Update the color in the layer dynamically
+            info.layer.props.getFillColor = [
+              parseInt(newColor.substr(1, 2), 16),
+              parseInt(newColor.substr(3, 2), 16),
+              parseInt(newColor.substr(5, 2), 16),
+              180,
+            ];
+
+            // Re-render the deck with updated properties
+            deckInstance.setProps({
+              layers: [...deckInstance.props.layers],
+            });
+          };
+
+          // Create the visibility checkbox
+          var checkVisibility = document.createElement("input");
+          checkVisibility.type = "checkbox";
+          checkVisibility.checked = true;
+          checkVisibility.classList.add("visibility-checkbox");
+          checkVisibility.onchange = function () {
+            if (this.checked) {
+              // Show layer
+              if (!deckInstance.props.layers.includes(info.layer)) {
+                deckInstance.setProps({
+                  layers: [...deckInstance.props.layers, info.layer],
+                });
+              }
+            } else {
+              // Hide layer
+              deckInstance.setProps({
+                layers: deckInstance.props.layers.filter(
+                  (layer) => layer !== info.layer
+                ),
+              });
+            }
+          };
+
+          legendItem.appendChild(colorBox);
+          legendItem.appendChild(nameLabel);
+          // legendItem.appendChild(colorInput);
+          // legendItem.appendChild(checkVisibility);
+          legendContainer.appendChild(legendItem);
+        });
+      }
     </script>
   </body>
 </html>
