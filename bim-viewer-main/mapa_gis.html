@@ -52,7 +52,7 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
         // Initialize the map
-        var map = L.map('map-container').setView([40.4168, -3.7038], 10);  // Coordinates of Madrid
+        var map = L.map('map-container').setView([40.4168, -3.7038], 10);
 
         // Add OpenStreetMap layer
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -67,19 +67,7 @@
             var marker = L.marker(map.getCenter()).addTo(map)
                 .bindPopup("<b>Marker added at " + map.getCenter().lat.toFixed(4) + ", " + map.getCenter().lng.toFixed(4) + "</b>");
             
-            addedLayers.push(marker);  // Add to layers array
-        });
-
-        // Add a polygon (fixed area for simplicity)
-        document.getElementById('addPolygonBtn').addEventListener('click', function() {
-            var polygon = L.polygon([
-                [40.417, -3.703],
-                [40.418, -3.701],
-                [40.416, -3.699]
-            ]).addTo(map)
-              .bindPopup("Polygon added");
-
-            addedLayers.push(polygon);  // Add to layers array
+            addedLayers.push(marker);
         });
 
         // Load a GeoJSON file and add it as a layer
@@ -90,7 +78,7 @@
                 reader.onload = function(e) {
                     var geojson = JSON.parse(e.target.result);
                     var geojsonLayer = L.geoJSON(geojson).addTo(map);
-                    addedLayers.push(geojsonLayer);  // Add GeoJSON to layers array
+                    addedLayers.push(geojsonLayer);
                 };
                 reader.readAsText(file);
             }
@@ -101,7 +89,7 @@
             addedLayers.forEach(function(layer) {
                 map.removeLayer(layer);
             });
-            addedLayers = [];  // Reset the layers array
+            addedLayers = [];
         }
 
         // Add button to clear all layers

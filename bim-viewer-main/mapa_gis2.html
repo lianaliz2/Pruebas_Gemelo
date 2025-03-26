@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Map with Layer Adding</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map-container {
+            width: 100%;
+            height: 80vh;
+        }
+
+        #controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #controls button, #controls input {
+            margin: 5px;
+        }
+
+        #legend {
+            position: fixed;
+            top: 90px;
+            right: 10px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 250px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .color-box {
+            display: none;
+        }
+
+        .color-input {
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .legend-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controles para añadir capas -->
+    <div id="controls">
+        <input type="file" id="geojsonFile" accept=".geojson" />
+    </div>
+
+    <!-- Contenedor del mapa -->
+    <div id="map-container"></div>
+
+    <!-- Leyenda desplegable -->
+    <div id="legend">
+        <div class="legend-header"></div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+    <script>
+        var map = L.map('map-container').setView([40.4168, -3.7038], 10);
+
+        // Capa base de OpenStreetMap
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var addedLayers = [];
+        var layerInfo = [];
+
+        // Capa para los elementos dibujados
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems
+            },
+            draw: {
+                polygon: false,
+                polyline: false,
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: true
+            }
+        });
+
+        map.addControl(drawControl);
+
+        // Evento cuando se crea un marcador
+        map.on('draw:created', function(event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+            if (layer instanceof L.Marker) {
+                var name = "marcador";
+                var color = '#008000';
+                layer.bindPopup(`<b>${name}</b><br>Ubicación: ${layer.getLatLng().lat.toFixed(4)}, ${layer.getLatLng().lng.toFixed(4)}`);
+                
+                layerInfo.push({ layer: layer, color: color, name: name });
+                updateLegend();
+            }
+        });
+
+        // Cargar un archivo GeoJSON
+        document.getElementById('geojsonFile').addEventListener('change', function(event) {
+            var file = event.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var geojson = JSON.parse(e.target.result);
+                    var name = file.name.substring(0, file.name.lastIndexOf('.'));
+                    if (!name) return;
+
+                    var color = '#FF0000';
+                    var geojsonLayer = L.geoJSON(geojson, {
+                        style: { color: color, weight: 2, fillOpacity: 0.3 }
+                    }).addTo(map);
+
+                    addedLayers.push(geojsonLayer);
+                    layerInfo.push({ layer: geojsonLayer, color: color, name: name });
+                    updateLegend();
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Función para actualizar la leyenda
+        function updateLegend() {
+            var legendContainer = document.getElementById('legend');
+            if (!legendContainer) {
+                legendContainer = document.createElement('div');
+                legendContainer.id = 'legend';
+                document.body.appendChild(legendContainer);
+            }
+
+            // Mostrar leyenda solo si hay capas
+            if (layerInfo.length > 0) {
+                legendContainer.style.display = 'block';
+            }
+
+            legendContainer.innerHTML = '<div class="legend-header">Legend</div>';
+
+            layerInfo.forEach(function(info, index) {
+                var legendItem = document.createElement('div');
+                legendItem.classList.add('legend-item');
+
+                // Crear caja de color
+                var colorBox = document.createElement('span');
+                colorBox.classList.add('color-box');
+                colorBox.style.backgroundColor = info.color;
+
+                // Crear etiqueta editable
+                var nameLabel = document.createElement('span');
+                nameLabel.textContent = info.name;
+                nameLabel.contentEditable = true;
+                nameLabel.style.cursor = "pointer";
+                nameLabel.onblur = function() {
+                    info.name = this.textContent;
+                    info.layer.bindPopup(`<b>${info.name}</b>`);
+                };
+
+                // Crear selector de color
+                var colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.value = info.color;
+                colorInput.classList.add('color-input');
+                colorInput.oninput = function() {
+                    var newColor = this.value;
+                    info.color = newColor;
+                    // Actualizar color en la leyenda y en el mapa
+                    colorBox.style.backgroundColor = newColor;
+                    if (info.layer.setStyle) {
+                        info.layer.setStyle({ color: newColor, fillColor: newColor });
+                    }
+                };
+
+                // Crear checkbox de visibilidad
+                var checkVisibility = document.createElement('input');
+                checkVisibility.type = 'checkbox';
+                checkVisibility.checked = true;
+                checkVisibility.classList.add('visibility-checkbox');
+                checkVisibility.onchange = function() {
+                    if (this.checked) {
+                        info.layer.addTo(map);
+                    } else {
+                        map.removeLayer(info.layer);
+                    }
+                };
+
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(nameLabel);
+                legendItem.appendChild(colorInput);
+                legendItem.appendChild(checkVisibility);
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+        // Función para limpiar todas las capas
+        function clearAllLayers() {
+            addedLayers.forEach(layer => map.removeLayer(layer));
+            addedLayers = [];
+            layerInfo = [];
+            updateLegend();
+        }
+
+        // Botón para limpiar capas
+        var clearButton = document.createElement("button");
+        clearButton.textContent = "Clear Layers";
+        clearButton.style.marginTop = "10px";
+        clearButton.addEventListener('click', clearAllLayers);
+        document.getElementById('controls').appendChild(clearButton);
+
+    </script>
+
+</body>
+</html>
