@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <style>
+        /* Hacer que el cuerpo ocupe el 100% de la pantalla y eliminar márgenes y relleno */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Estilo para el contenedor del mapa */
+        #map {
+            position: absolute;
+            top: 60px; /* Deja espacio para la barra de búsqueda */
+            bottom: 0;
+            right: 0;
+            left: 0;
+        }
+
+        /* Estilo para la barra de búsqueda */
+        .leaflet-control-geocoder {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%); /* Centrado */
+            width: 80%;  /* Tamaño ajustado */
+            max-width: 400px;  /* Ancho máximo */
+            background-color: #fff;  /* Fondo blanco */
+            border-radius: 50px;  /* Bordes redondeados */
+            padding: 10px 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+        }
+
+        /* Estilo para el campo de entrada de texto */
+        .leaflet-control-geocoder input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 16px;
+            color: #333;
+            background: transparent;
+            padding: 5px 10px;
+            border-radius: 30px;
+        }
+
+        /* Estilo para las sugerencias */
+        .leaflet-control-geocoder-results {
+            max-height: 250px;  /* Altura máxima */
+            overflow-y: auto;  /* Desplazamiento vertical */
+            background-color: #fff;  /* Fondo blanco */
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 14px;
+            width: 100%;
+            position: absolute;
+            top: 60px;  /* Desplazar las sugerencias hacia abajo */
+            left: 50%;
+            transform: translateX(-50%);
+            
+        }
+
+        .leaflet-control-geocoder-alternatives, .leaflet-control-geocoder-alternatives-minimized,
+        .leaflet-control-geocoder-form-no-error{
+            display: none;
+        }
+
+        .leaflet-control-geocoder-results li {
+            padding: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: none;
+        }
+
+        .leaflet-control-geocoder-results li:hover {
+            background-color: #f0f0f0;  /* Efecto hover */
+        }
+
+        /* Sombra y efectos */
+        .leaflet-bar a {
+            color: #333;
+        }
+
+        .leaflet-bar a:hover {
+            color: #007bff;
+        }
+    </style>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <!-- Leaflet Control Geocoder -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+</head>
+
+<body>
+
+    <!-- Contenedor del mapa -->
+    <div id="map"></div>
+
+    <script>
+        // Inicializa el mapa
+        var map = L.map('map', {
+            center: [40.4168, -3.7038],
+            zoom: 6
+        });
+
+        // Capa de tiles (OpenStreetMap)
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Crear el geocodificador
+        var geocoder = L.Control.geocoder({
+            placeholder: 'Buscar lugar...',  
+            collapsed: false,
+            position: 'topright',
+            suggest: true
+        }).addTo(map);
+
+        // Evento que se activa cuando se encuentra un resultado
+        geocoder.on('markgeocode', function(e) {
+            console.log("Resultados de geocodificación:", e);
+            var latlng = e.geocode.center;
+            map.setView(latlng, 13);
+        });
+
+
+    </script>
+
+</body>
+</html>
