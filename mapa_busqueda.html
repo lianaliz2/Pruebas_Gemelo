@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content/text/html; charset=UTF-8 />
+    <style>
+        /* Estilos CSS para el mapa y la barra de búsqueda */
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            left: 0;
+        }
+
+        .leaflet-control-geocoder {
+            /* Estilos para la barra de búsqueda */
+            display: none; /* Inicialmente oculta */
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000; /* Asegurarse de que esté encima del mapa */
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Crear el mapa
+        var map = L.map('map').setView([40.4168, -3.7038], 6);
+
+        // Agregar la capa base (puedes cambiarla por la que desees)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Agregar el control de geocodificación
+        var geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false // Para evitar que se agregue un marcador automáticamente
+        }).on('markgeocode', function(e) {
+            // Centrar el mapa en la ubicación encontrada
+            map.fitBounds(e.geocode.bbox);
+            // Ocultar la barra de búsqueda después de la búsqueda
+            document.querySelector('.leaflet-control-geocoder').style.display = 'none';
+        }).addTo(map);
+
+        // Agregar un botón para mostrar/ocultar la barra de búsqueda
+        var searchButton = L.easyButton({
+            states: [{
+                stateName: 'search-hidden',
+                icon: 'fa-search',
+                title: 'Mostrar búsqueda',
+                onClick: function(btn, map) {
+                    document.querySelector('.leaflet-control-geocoder').style.display = 'block';
+                    btn.state('search-visible');
+                }
+            }, {
+                stateName: 'search-visible',
+                icon: 'fa-times',
+                title: 'Ocultar búsqueda',
+                onClick: function(btn, map) {
+                    document.querySelector('.leaflet-control-geocoder').style.display = 'none';
+                    btn.state('search-hidden');
+                }
+            }]
+        }).addTo(map);
+    </script>
+</body>
+</html>

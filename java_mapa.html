@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <style>
+        /* Hacer que el cuerpo ocupe el 100% de la pantalla y eliminar márgenes y relleno */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Estilo para el contenedor del mapa */
+        #map {
+            position: absolute;
+            top: 50px; /* Deja espacio para la barra de búsqueda */
+            bottom: 0;
+            right: 0;
+            left: 0;
+            border: 2px solid #ccc; /* Borde sutil alrededor del mapa */
+            border-radius: 10px; /* Bordes redondeados */
+        }
+
+        /* Estilo para la barra de búsqueda del geocodificador */
+        .leaflet-control-geocoder {
+            font-family: 'Arial', sans-serif;
+            font-size: 16px; /* Un tamaño de fuente más grande */
+            width: 100%; /* Hace que ocupe toda la línea */
+            position: absolute;
+            top: 10px;  /* Barra de búsqueda en la parte superior */
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.8); /* Fondo blanco semi-transparente */
+            border-radius: 50px; /* Bordes redondeados */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra para mejorar visibilidad */
+        }
+
+        .leaflet-bar a {
+            color: #333; /* Color de los iconos del geocodificador */
+        }
+
+        .leaflet-bar a:hover {
+            color: #007bff; /* Color azul al pasar el ratón sobre los iconos */
+        }
+
+        /* Estilo para las sugerencias */
+        .leaflet-control-geocoder-results {
+            max-height: 40px;  /* Solo una sugerencia visible */
+            overflow-y: auto;  /* Permitir desplazamiento si es necesario */
+            max-width: 500px;  /* Limitar el ancho */
+            margin: 0 auto;
+        }
+
+        .leaflet-control-geocoder-results li {
+            white-space: nowrap;  /* Evita que el texto se divida en varias líneas */
+            text-overflow: ellipsis; /* Cortar el texto si es demasiado largo */
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+    </style>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <!-- Leaflet Control Geocoder -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+</head>
+
+<body>
+
+    <!-- Contenedor del mapa -->
+    <div id="map"></div>
+
+    <script>
+        // Inicializa el mapa de Leaflet
+        var map = L.map('map', {
+            center: [40.4168, -3.7038], // Coordenadas de Madrid como ejemplo
+            zoom: 6
+        });
+
+        // Capa de tiles (OpenStreetMap)
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Agregar geocodificador a tu mapa, con solo una sugerencia
+        var geocoder = L.Control.geocoder({
+            placeholder: 'Buscar lugar...',  // Texto del placeholder
+            collapsed: true,                  // Colapsar la caja de búsqueda
+            position: 'topright',             // Ubicación de la caja (arriba a la derecha)
+            suggest: true,                    // Habilitar sugerencias
+            geocodeResult: function (results) {
+                if (results && results[0]) {
+                    var latlng = results[0].center;
+                    map.setView(latlng, 13);  // Centrar el mapa en la ubicación encontrada
+                }
+            }
+        }).addTo(map);
+
+        // Limitar las sugerencias a solo una
+        map.on('geocoding', function(e) {
+            // Evitar mostrar más de una sugerencia
+            var resultsContainer = document.querySelector('.leaflet-control-geocoder-results');
+            if (resultsContainer) {
+                var items = resultsContainer.querySelectorAll('li');
+                if (items.length > 1) {
+                    // Eliminar todas las sugerencias excepto la primera
+                    for (var i = 1; i < items.length; i++) {
+                        items[i].remove();
+                    }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
